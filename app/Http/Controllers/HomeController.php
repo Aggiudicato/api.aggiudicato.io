@@ -6,12 +6,10 @@ use Illuminate\Http\Request;
 
 class HomeController extends Controller
 {
-    //
     public function index() {
         return view('welcome',[
             'title' => 'Home',
             'data' => date("Y-m-d H:i:s")
         ]);
-        //echo "Home page ".date("Y-m-d H:i:s");
     }
 }

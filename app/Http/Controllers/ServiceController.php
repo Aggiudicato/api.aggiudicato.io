@@ -10,5 +10,5 @@ class ServiceController extends Controller
        return response()
        ->view('service.wsdl', [], 200)
        ->header('Content-Type', 'application/soap+xml');
- }   //
+ }   // --- IGNORE ---
 }
