@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 class ServiceController extends Controller
 {
  public function index(){
-        return view('service.wsdl');
+       return response()
+       ->view('service.wsdl', [], 200)
+       ->header('Content-Type', 'application/soap+xml');
  }   //
 }
