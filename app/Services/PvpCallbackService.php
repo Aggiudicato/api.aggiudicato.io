@@ -64,7 +64,7 @@ class PvpCallbackService
             $publicationDate,
         );
 
-        $signedBody = $this->wsSecurity->signResponse($unsignedBody);
+        $signedBody = $this->wsSecurity->signEnvelope($unsignedBody);
 
         Log::info('PVP Callback: sending publication notification', [
             'pvp_id' => $insertion->pvp_id,

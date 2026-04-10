@@ -53,7 +53,7 @@ class WsSecurityServiceTest extends TestCase
     {
         $unsigned = $this->buildSoapEnvelope('<tns:receiveResponse>ok</tns:receiveResponse>');
 
-        $signed = $this->service->signResponse($unsigned);
+        $signed = $this->service->signEnvelope($unsigned);
 
         $this->assertStringContainsString('wsse:Security', $signed);
         $this->assertStringContainsString('wsse:BinarySecurityToken', $signed);
@@ -68,7 +68,7 @@ class WsSecurityServiceTest extends TestCase
     {
         $unsigned = $this->buildSoapEnvelope('<tns:payload>hello</tns:payload>');
 
-        $signed = $this->service->signResponse($unsigned);
+        $signed = $this->service->signEnvelope($unsigned);
 
         $doc = new \DOMDocument();
         $doc->loadXML($signed);
@@ -108,7 +108,7 @@ class WsSecurityServiceTest extends TestCase
     public function test_sign_response_body_digest_matches_actual_body(): void
     {
         $unsigned = $this->buildSoapEnvelope('<tns:result>42</tns:result>');
-        $signed = $this->service->signResponse($unsigned);
+        $signed = $this->service->signEnvelope($unsigned);
 
         $doc = new \DOMDocument();
         $doc->loadXML($signed);
@@ -136,7 +136,7 @@ class WsSecurityServiceTest extends TestCase
         ]);
 
         $unsigned = $this->buildSoapEnvelope('<tns:ping/>');
-        $result = $this->service->signResponse($unsigned);
+        $result = $this->service->signEnvelope($unsigned);
 
         $this->assertSame($unsigned, $result, 'When cert/key paths are invalid, response must be returned unmodified');
     }

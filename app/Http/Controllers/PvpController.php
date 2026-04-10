@@ -85,7 +85,7 @@ class PvpController extends Controller
         }
 
         $xmlContent = view($view, $data)->render();
-        $signedXml = $this->wsSecurity->signResponse($xmlContent);
+        $signedXml = $this->wsSecurity->signEnvelope($xmlContent);
 
         return response($signedXml, 200, [
             'Content-Type' => 'text/xml; charset=utf-8',

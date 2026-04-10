@@ -61,7 +61,7 @@ class PvpInboundSignatureTest extends TestCase
     {
         config(['pvp.ministry_cert_path' => storage_path('pvp-client.pem')]);
 
-        $signedRequest = (new WsSecurityService())->signResponse($this->unsignedFixture);
+        $signedRequest = (new WsSecurityService())->signEnvelope($this->unsignedFixture);
 
         $this->assertStringContainsString('wsse:Security', $signedRequest);
         $this->assertStringContainsString('ds:Signature', $signedRequest);
@@ -90,7 +90,7 @@ class PvpInboundSignatureTest extends TestCase
             'pvp.ministry_cert_path' => storage_path('documenti/model-office-pvp.giustizia.it.cer'),
         ]);
 
-        $signedRequest = (new WsSecurityService())->signResponse($this->unsignedFixture);
+        $signedRequest = (new WsSecurityService())->signEnvelope($this->unsignedFixture);
 
         $response = $this->call(
             'POST',
