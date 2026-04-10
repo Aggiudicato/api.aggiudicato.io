@@ -141,6 +141,33 @@ class WsSecurityServiceTest extends TestCase
         $this->assertSame($unsigned, $result, 'When cert/key paths are invalid, response must be returned unmodified');
     }
 
+    public function test_sign_throws_in_production_when_client_cert_missing(): void
+    {
+        $this->app->detectEnvironment(fn () => 'production');
+
+        config([
+            'pvp.client_cert_path' => '/nonexistent/cert.pem',
+            'pvp.client_key_path'  => '/nonexistent/key.pem',
+        ]);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('WS-Security: client certificate required in production');
+
+        $this->service->signEnvelope($this->buildSoapEnvelope('<tns:ping/>'));
+    }
+
+    public function test_validate_throws_in_production_when_ministry_cert_missing(): void
+    {
+        $this->app->detectEnvironment(fn () => 'production');
+
+        config(['pvp.ministry_cert_path' => null]);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('WS-Security: ministry certificate required in production');
+
+        $this->service->validateIncomingSignature($this->buildSoapEnvelope('<tns:ping/>'));
+    }
+
     private function buildSoapEnvelope(string $bodyContent): string
     {
         return <<<XML

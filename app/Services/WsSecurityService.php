@@ -60,6 +60,14 @@ class WsSecurityService
         $ministryCertPath = config('pvp.ministry_cert_path');
 
         if (! $ministryCertPath || ! file_exists($ministryCertPath)) {
+            // Fail-closed in production: the dev-mode bypass exists only so
+            // local and CI environments can run without the ministry cert.
+            // Allowing it in production would silently disable signature
+            // pinning and let forged messages through.
+            if (app()->environment('production')) {
+                throw new \RuntimeException('WS-Security: ministry certificate required in production but not configured');
+            }
+
             Log::warning('WS-Security: ministry certificate not configured, skipping validation');
 
             return true;
@@ -143,6 +151,14 @@ class WsSecurityService
         $keyPath = config('pvp.client_key_path');
 
         if (! $certPath || ! $keyPath || ! file_exists($certPath) || ! file_exists($keyPath)) {
+            // Fail-closed in production: unsigned outbound messages would be
+            // rejected by the ministry and unsigned responses would fail
+            // non-repudiation archival. The silent-return path exists only
+            // for local dev and CI where certs are not provisioned.
+            if (app()->environment('production')) {
+                throw new \RuntimeException('WS-Security: client certificate required in production but not configured');
+            }
+
             Log::warning('WS-Security: client certificate not configured, envelope returned unsigned');
 
             return $xmlEnvelope;
@@ -157,7 +173,7 @@ class WsSecurityService
             $envelope = $xpath->query('//soap:Envelope')->item(0);
             $body = $xpath->query('//soap:Body')->item(0);
 
-            if (! $envelope || ! $body) {
+            if (! $envelope instanceof \DOMElement || ! $body instanceof \DOMElement) {
                 Log::error('WS-Security: SOAP structure not found in response');
 
                 return $xmlEnvelope;
