@@ -1,0 +1,209 @@
+# =============================================================================
+# nginx config for api.aggiudicato.io — Laravel 13 + PVP SOAP integration
+# -----------------------------------------------------------------------------
+# This vhost serves:
+#   - GET  /                   (landing)
+#   - GET  /pvp/service        (WSDL / plain HTTPS)
+#   - POST /pvp/service        (Italian Ministry PVP SOAP endpoint, mTLS)
+#   - /listings/*              (public HTTPS)
+#
+# -----------------------------------------------------------------------------
+# MINISTRY CA INSTALLATION
+# -----------------------------------------------------------------------------
+# The Ministry (PVP) presents a client certificate when POSTing auction data.
+# To verify it, you must install the CA bundle the Ministry publishes.
+#
+#   1. Obtain the PVP CA chain (PEM format) from the Ministry's onboarding
+#      documentation or support channel. It is usually a concatenation of
+#      the issuing CA + any intermediates.
+#   2. Create the target directory and install the file:
+#        sudo mkdir -p /etc/ssl/pvp
+#        sudo install -m 0644 -o root -g root ministry-ca.pem /etc/ssl/pvp/ministry-ca.pem
+#   3. Validate nginx config and reload:
+#        sudo nginx -t && sudo systemctl reload nginx
+#
+# If /etc/ssl/pvp/ministry-ca.pem is missing, nginx will fail to (re)start.
+# Until you receive the real bundle, you can keep this server block commented
+# out or point ssl_client_certificate to a self-signed test CA.
+# -----------------------------------------------------------------------------
+# DESIGN CHOICE — SELECTIVE mTLS
+# -----------------------------------------------------------------------------
+# The Ministry requires mTLS only on POST /pvp/service. All other endpoints
+# (landing, WSDL GET, /listings/*) must remain reachable by plain HTTPS
+# browsers that have no client certificate.
+#
+# nginx has no native "require client cert on this location only" directive:
+# ssl_verify_client is a server-level setting negotiated during the TLS
+# handshake, BEFORE nginx knows which location will be hit. The accepted
+# idiomatic pattern is therefore:
+#
+#   1. Set `ssl_verify_client optional;` at server scope so nginx REQUESTS
+#      but does not REQUIRE a client cert during the handshake.
+#   2. Inside `location = /pvp/service`, enforce SUCCESS verification at the
+#      application layer by returning 403 when $ssl_client_verify != SUCCESS
+#      on POST requests.
+#
+# We use `if ($request_method = POST)` here because the check is a simple
+# return — this is one of the few documented-safe uses of `if` in location
+# context per the nginx "If Is Evil" wiki page.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# HTTP → HTTPS redirect
+# -----------------------------------------------------------------------------
+server {
+    listen 80;
+    listen [::]:80;
+    server_name api.aggiudicato.io;
+
+    # Allow ACME HTTP-01 challenges for Let's Encrypt renewals
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/html;
+        default_type "text/plain";
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# -----------------------------------------------------------------------------
+# HTTPS vhost — Laravel 13 + selective mTLS for PVP
+# -----------------------------------------------------------------------------
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name api.aggiudicato.io;
+
+    root /var/www/aggiudicato-test-api/public;
+    index index.php;
+
+    charset utf-8;
+
+    # Ministry XML payloads can include attachment metadata — give some headroom
+    client_max_body_size 20M;
+    client_body_timeout  60s;
+
+    # -------------------------------------------------------------------------
+    # TLS — server certificate (Let's Encrypt / certbot)
+    # -------------------------------------------------------------------------
+    ssl_certificate     /etc/letsencrypt/live/api.aggiudicato.io/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.aggiudicato.io/privkey.pem;
+
+    ssl_protocols             TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers               'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256';
+    ssl_session_cache         shared:SSL:10m;
+    ssl_session_timeout       1d;
+    ssl_session_tickets       off;
+
+    # OCSP stapling
+    ssl_stapling         on;
+    ssl_stapling_verify  on;
+    resolver             1.1.1.1 8.8.8.8 valid=300s;
+    resolver_timeout     5s;
+
+    # -------------------------------------------------------------------------
+    # TLS — client certificate verification (mTLS, OPTIONAL at handshake)
+    # -------------------------------------------------------------------------
+    # IMPORTANT: this file must contain the Ministry CA bundle. See the header
+    # of this file for installation instructions.
+    ssl_client_certificate /etc/ssl/pvp/ministry-ca.pem;
+
+    # `optional` = request client cert but do not abort handshake if absent.
+    # Enforcement happens inside location = /pvp/service below.
+    ssl_verify_client       optional;
+    ssl_verify_depth        3;
+
+    # -------------------------------------------------------------------------
+    # Security headers
+    # -------------------------------------------------------------------------
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Content-Type-Options    "nosniff" always;
+    add_header X-Frame-Options           "SAMEORIGIN" always;
+    add_header Referrer-Policy           "strict-origin-when-cross-origin" always;
+    add_header X-XSS-Protection          "1; mode=block" always;
+    add_header Permissions-Policy        "geolocation=(), microphone=(), camera=()" always;
+
+    # -------------------------------------------------------------------------
+    # Laravel front controller
+    # -------------------------------------------------------------------------
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    # Block hidden files except .well-known (Let's Encrypt / security.txt)
+    location ~ /\.(?!well-known).* {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+
+    # -------------------------------------------------------------------------
+    # PVP SOAP endpoint — mTLS enforced on POST only
+    # -------------------------------------------------------------------------
+    # GET is allowed to pass through (e.g. WSDL discovery, health checks).
+    # POST MUST present a client cert signed by the Ministry CA installed in
+    # ssl_client_certificate. Anything else gets 403 immediately.
+    location = /pvp/service {
+        if ($request_method = POST) {
+            set $pvp_mtls_missing 1;
+        }
+        if ($ssl_client_verify = SUCCESS) {
+            set $pvp_mtls_missing 0;
+        }
+        if ($pvp_mtls_missing = 1) {
+            return 403 "client certificate required\n";
+        }
+
+        # Hand off to PHP-FPM via the shared location below
+        try_files $uri /index.php?$query_string;
+    }
+
+    # -------------------------------------------------------------------------
+    # PHP-FPM
+    # -------------------------------------------------------------------------
+    location ~ \.php$ {
+        try_files $uri =404;
+
+        fastcgi_pass   unix:/run/php/php8.4-fpm.sock;
+        fastcgi_index  index.php;
+
+        include        fastcgi_params;
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+        fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;
+        fastcgi_param  PATH_INFO        $fastcgi_path_info;
+        fastcgi_param  HTTPS            on;
+
+        # ---- Forward TLS client-cert info to Laravel -----------------------
+        # These become $_SERVER['SSL_CLIENT_VERIFY'] etc. in PHP. Used by the
+        # PVP auth middleware to log / cross-check the caller identity.
+        fastcgi_param  SSL_CLIENT_VERIFY       $ssl_client_verify;
+        fastcgi_param  SSL_CLIENT_S_DN         $ssl_client_s_dn;
+        fastcgi_param  SSL_CLIENT_I_DN         $ssl_client_i_dn;
+        fastcgi_param  SSL_CLIENT_FINGERPRINT  $ssl_client_fingerprint;
+        fastcgi_param  SSL_CLIENT_SERIAL       $ssl_client_serial;
+        fastcgi_param  SSL_CLIENT_V_END        $ssl_client_v_end;
+
+        fastcgi_read_timeout 60s;
+        fastcgi_buffers 16 16k;
+        fastcgi_buffer_size 32k;
+    }
+
+    # -------------------------------------------------------------------------
+    # Static asset caching (Vite build output)
+    # -------------------------------------------------------------------------
+    location ~* \.(?:css|js|woff2?|ttf|eot|ico|png|jpg|jpeg|gif|svg|webp)$ {
+        expires 7d;
+        add_header Cache-Control "public, immutable";
+        access_log off;
+        try_files $uri =404;
+    }
+
+    # -------------------------------------------------------------------------
+    # Logs
+    # -------------------------------------------------------------------------
+    access_log /var/log/nginx/api.aggiudicato.io.access.log;
+    error_log  /var/log/nginx/api.aggiudicato.io.error.log warn;
+}

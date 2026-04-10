@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+    <soap:Header/>
+    <soap:Body xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"
+               wsu:Id="id-DAC66D6FC2F618652E150822577202069">
+        <inserzioneEspVendita xmlns="http://www.giustizia.it/pvp/integration/sitoPubblicitaWS/service/definitions/InserzioneEsperimentoVenditaXMLSchema"
+                              idInserzioneEspVendita="45508"
+                              messageId="d93e128b-b30d-11e7-9729-005056b14a1a">
+            <tipologiaInserzione>giudiziaria</tipologiaInserzione>
+            <datiProcedura idProcedura="51155">
+                <tipoProcedura>giudiziaria</tipoProcedura>
+                <proceduraGiudiziaria idProcedura="51155"
+                                      idRegistro="EI80"
+                                      idRito="EI80"
+                                      idTribunale="0151490090">
+                    <tribunale>Tribunale di MONZA</tribunale>
+                    <registro>ESECUZIONI CIVILI IMMOBILIARI</registro>
+                    <rito>ESECUZIONE IMMOBILIARE POST LEGGE 80</rito>
+                    <numeroProcedura>2</numeroProcedura>
+                    <annoProcedura>2017</annoProcedura>
+                </proceduraGiudiziaria>
+                <soggetti idAnagrafica="47602">
+                    <tipo>Delegato alla vendita</tipo>
+                    <nome>nomeSog</nome>
+                    <cognome>cognomeSog</cognome>
+                    <codiceFiscale>aaabbb00b00a000a</codiceFiscale>
+                    <email>mail@mail.it</email>
+                    <procedeOpVendita>true</procedeOpVendita>
+                    <soggVisitaBene>true</soggVisitaBene>
+                </soggetti>
+            </datiProcedura>
+            <lotto idLotto="43902">
+                <primoIdentificativoLotto>43902</primoIdentificativoLotto>
+                <codice>2</codice>
+                <genere>IMMOBILI</genere>
+                <categoria>IMMOBILE RESIDENZIALE</categoria>
+                <descrizioneIT>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut fringilla turpis semper, efficitur justo sit amet, dictum nisl.</descrizioneIT>
+                <beni idBene="52453">
+                    <primoIdentificativoBene>52453</primoIdentificativoBene>
+                    <tipologia>IMMOBILE RESIDENZIALE</tipologia>
+                    <categoria>ABITAZIONE DI TIPO CIVILE</categoria>
+                    <ubicazione>
+                        <indirizzo>via prova</indirizzo>
+                        <capZipCode>20841</capZipCode>
+                        <citta>Carate Brianza</citta>
+                        <provincia>Monza e della Brianza</provincia>
+                        <regione>Lombardia</regione>
+                        <nazione>Italia</nazione>
+                    </ubicazione>
+                    <descrizioneIT>Lorem ipsum dolor sit amet</descrizioneIT>
+                </beni>
+            </lotto>
+            <datiVendita>
+                <dataOraVendita>2017-10-18T03:00:00</dataOraVendita>
+                <tipologiaVendita>SENZA INCANTO</tipologiaVendita>
+                <modalitaVendita>SINCRONA TELEMATICA</modalitaVendita>
+                <offertaMinima>100,00</offertaMinima>
+                <rialzoMinimo>10,00</rialzoMinimo>
+                <pagamentoContributo>
+                    <esenzione>
+                        <motivoEsenzione>Demo</motivoEsenzione>
+                    </esenzione>
+                    <spesaPrenotataDebito>false</spesaPrenotataDebito>
+                    <contributoNonDovuto>false</contributoNonDovuto>
+                </pagamentoContributo>
+                <terminePresentazioneOfferte>2017-10-17T21:00:00</terminePresentazioneOfferte>
+            </datiVendita>
+            <siti idSito="61">
+                <tipologia>gestore delle vendite</tipologia>
+                <nominativo>http://www.sito.it</nominativo>
+                <url>http://www.sito.it</url>
+            </siti>
+            <siti idSito="46">
+                <tipologia>sito pubblicita</tipologia>
+                <nominativo>https://test.sito.it</nominativo>
+                <url>https://test.sito.it</url>
+            </siti>
+            <dataPubblicazione>2017-10-17</dataPubblicazione>
+        </inserzioneEspVendita>
+    </soap:Body>
+</soap:Envelope>

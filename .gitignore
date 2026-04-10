@@ -17,6 +17,10 @@
 /public/hot
 /public/storage
 /storage/*.key
+/storage/*.p12
+/storage/*.pem
+/storage/*.crt
+/storage/*.cer
 /storage/pail
 /vendor
 Homestead.json
