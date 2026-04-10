@@ -15,9 +15,11 @@ class PvpIngestionService
 
     public function ingest(string $xmlContent): Insertion
     {
-        $this->storeRawXml($xmlContent);
-
         $data = $this->parser->parse($xmlContent);
+        $pvpId = $data['insertion']['pvp_id'];
+
+        $this->storeRawXml($xmlContent, $pvpId);
+
         $insertion = $this->persistence->persist($data, $xmlContent);
 
         Log::info('PVP: insertion saved', [
@@ -28,11 +30,8 @@ class PvpIngestionService
         return $insertion;
     }
 
-    private function storeRawXml(string $xmlContent): void
+    private function storeRawXml(string $xmlContent, string $pvpId): void
     {
-        preg_match('/idInserzioneEspVendita="([^"]+)"/', $xmlContent, $matches);
-        $pvpId = $matches[1] ?? 'unknown_' . time();
-
         Storage::disk('local')->put("aste_ricevute/asta_{$pvpId}.xml", $xmlContent);
     }
 }

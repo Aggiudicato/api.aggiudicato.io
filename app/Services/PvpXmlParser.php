@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Support\SafeXml;
+
 /**
  * Parse the Ministry `inserzioneEspVendita` SOAP payload into a flat array.
  *
@@ -44,17 +46,7 @@ class PvpXmlParser
 
     private function loadXml(string $xmlContent): \SimpleXMLElement
     {
-        libxml_use_internal_errors(true);
-        $xml = simplexml_load_string($xmlContent);
-
-        if ($xml === false) {
-            $errors = libxml_get_errors();
-            libxml_clear_errors();
-            $msg = collect($errors)->map(fn ($e) => trim($e->message))->implode('; ');
-            throw new \RuntimeException("Invalid XML: {$msg}");
-        }
-
-        return $xml;
+        return SafeXml::loadSimpleXml($xmlContent);
     }
 
     private function extractBody(\SimpleXMLElement $xml): \SimpleXMLElement

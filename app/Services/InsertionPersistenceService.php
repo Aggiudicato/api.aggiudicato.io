@@ -13,6 +13,14 @@ use App\Models\Site;
 use App\Models\Subject;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Persist the parsed ministry payload into the normalized relational schema.
+ *
+ * Sits between PvpXmlParser (flattens XML to array sections) and the Eloquent
+ * models. Owns the transactional boundary and the idempotency contract:
+ * re-ingesting the same `pvp_id` updates the insertion row and rebuilds its
+ * subtree, so ministry retries cannot produce duplicates or partial state.
+ */
 class InsertionPersistenceService
 {
     /**

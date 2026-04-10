@@ -160,4 +160,31 @@ class PvpIngestionEndpointTest extends TestCase
 
         $this->assertDatabaseCount('insertions', 0);
     }
+
+    public function test_post_with_doctype_payload_is_rejected(): void
+    {
+        $evilXml = <<<'XML'
+<?xml version="1.0"?>
+<!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <foo>&xxe;</foo>
+  </soap:Body>
+</soap:Envelope>
+XML;
+
+        $response = $this->call(
+            'POST',
+            '/pvp/service',
+            [], [], [],
+            ['CONTENT_TYPE' => 'text/xml'],
+            $evilXml,
+        );
+
+        $response->assertOk();
+        $this->assertStringContainsString('<xsd2:codice>0</xsd2:codice>', $response->getContent());
+        $this->assertStringContainsString('DOCTYPE not allowed', $response->getContent());
+
+        $this->assertDatabaseCount('insertions', 0);
+    }
 }

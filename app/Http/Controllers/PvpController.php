@@ -78,10 +78,17 @@ class PvpController extends Controller
 
     private function soapResponse(string $view, array $data)
     {
+        if (isset($data['messageId'])) {
+            $data['messageIdAttr'] = ' messageId="' . htmlspecialchars($data['messageId'], ENT_QUOTES | ENT_XML1) . '"';
+        } else {
+            $data['messageIdAttr'] = '';
+        }
+
         $xmlContent = view($view, $data)->render();
         $signedXml = $this->wsSecurity->signResponse($xmlContent);
 
-        return response($signedXml)
-            ->header('Content-Type', 'text/xml');
+        return response($signedXml, 200, [
+            'Content-Type' => 'text/xml; charset=utf-8',
+        ]);
     }
 }

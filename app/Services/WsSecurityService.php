@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\SafeXml;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -42,8 +43,7 @@ class WsSecurityService
         }
 
         try {
-            $doc = new \DOMDocument();
-            $doc->loadXML($xmlContent);
+            $doc = SafeXml::loadDom($xmlContent);
 
             $xpath = new \DOMXPath($doc);
             $xpath->registerNamespace('soap', 'http://schemas.xmlsoap.org/soap/envelope/');
@@ -101,8 +101,7 @@ class WsSecurityService
         }
 
         try {
-            $doc = new \DOMDocument();
-            $doc->loadXML($xmlResponse);
+            $doc = SafeXml::loadDom($xmlResponse);
 
             $certContent = file_get_contents($certPath);
             $keyContent = file_get_contents($keyPath);
@@ -141,8 +140,7 @@ class WsSecurityService
             $tokenId = 'SecurityToken-' . bin2hex(random_bytes(8));
             $securityHeaderXml = $this->buildSecurityHeaderXml($certBase64, $signedInfoXml, $signatureValue, $tokenId);
 
-            $headerDoc = new \DOMDocument();
-            $headerDoc->loadXML('<soap:Header xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' . $securityHeaderXml . '</soap:Header>');
+            $headerDoc = SafeXml::loadDom('<soap:Header xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">' . $securityHeaderXml . '</soap:Header>');
 
             $importedHeader = $doc->importNode($headerDoc->documentElement, true);
             $envelope->insertBefore($importedHeader, $body);
@@ -285,8 +283,7 @@ class WsSecurityService
 
     private function signData(string $signedInfoXml, $privateKey): string
     {
-        $signedInfoDoc = new \DOMDocument();
-        $signedInfoDoc->loadXML($signedInfoXml);
+        $signedInfoDoc = SafeXml::loadDom($signedInfoXml);
         $canonicalSignedInfo = $signedInfoDoc->documentElement->C14N(true);
 
         openssl_sign($canonicalSignedInfo, $signature, $privateKey, OPENSSL_ALGO_SHA256);
