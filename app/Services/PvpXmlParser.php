@@ -2,6 +2,24 @@
 
 namespace App\Services;
 
+/**
+ * Parse the Ministry `inserzioneEspVendita` SOAP payload into a flat array.
+ *
+ * The ministry XML is verbose and deeply nested with many optional branches
+ * (proceduraGiudiziaria / altraVendita; beneImmobile / beneMobile / beneAzienda).
+ * This parser flattens it into a shape consumable by InsertionPersistenceService.
+ *
+ * Namespace handling uses a three-tier fallback because real ministry samples
+ * sometimes declare the InserzioneEsperimentoVenditaXMLSchema namespace on the
+ * root element, sometimes leave children in the default namespace, and
+ * sometimes use explicit `xsd1:` prefixes. The `getChild` / `getChildrenList`
+ * helpers try all three in order so the parser tolerates any of these forms
+ * without the caller knowing which shape was sent.
+ *
+ * Throws RuntimeException on XML errors or when the root `inserzioneEspVendita`
+ * element or its `idInserzioneEspVendita` attribute is missing — these are
+ * the only hard requirements; everything else is best-effort.
+ */
 class PvpXmlParser
 {
     private const NS = 'http://www.giustizia.it/pvp/integration/sitoPubblicitaWS/service/definitions/InserzioneEsperimentoVenditaXMLSchema';

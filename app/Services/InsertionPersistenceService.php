@@ -16,7 +16,18 @@ use Illuminate\Support\Facades\DB;
 class InsertionPersistenceService
 {
     /**
-     * Persist parsed PVP data into the database within a single transaction.
+     * Persist a parsed PVP payload and all related entities in one transaction.
+     *
+     * Uses `updateOrCreate` on `pvp_id` for idempotency: the Ministry retries
+     * failed inserzioneEspVendita calls until it gets a success response, so
+     * re-receiving the same `pvp_id` must not create duplicate records. The
+     * old procedure/lot/sale_data/sites/events rows for that insertion are
+     * recreated on each ingestion — simpler than diff-and-patch and the
+     * Ministry XML is always authoritative.
+     *
+     * Transactional: if any child persistence fails the whole insertion
+     * rolls back, so we never end up with an insertion that has a partial
+     * subtree (e.g. lot but no assets).
      */
     public function persist(array $data, string $xmlContent): Insertion
     {

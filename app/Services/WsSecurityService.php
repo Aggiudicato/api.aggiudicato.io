@@ -4,10 +4,32 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Log;
 
+/**
+ * WS-Security (OASIS WSS 1.0) signer and verifier for PVP ministry integration.
+ *
+ * Implements the application-layer security model mandated by
+ * PVP_ST_Allegato_A_V1.4 §3.1.2: every SOAP message exchanged with the
+ * Ministry must be signed with X.509 (BinarySecurityToken + XMLDSig) to
+ * provide non-repudiation on top of the mTLS transport layer.
+ *
+ * Signing uses SHA256/RSA with exclusive XML canonicalization (exc-c14n).
+ * The ministry specification shows SHA1 in its legacy examples, but SHA256
+ * is the current accepted algorithm and what all modern PVP integrations use.
+ */
 class WsSecurityService
 {
     /**
-     * Validate the WS-Security signature in the incoming SOAP header.
+     * Verify the WS-Security signature on an incoming SOAP envelope.
+     *
+     * Three-step validation: (1) extract the ministry-provided X509 cert
+     * from the BinarySecurityToken, (2) pin it against the ministry cert
+     * we have on disk by SHA256 fingerprint comparison, (3) verify the
+     * XMLDSig signature over the canonicalized SOAP Body.
+     *
+     * When the ministry certificate path is not configured, validation is
+     * deliberately skipped and returns true. This is NOT a security bug —
+     * it's intentional so local development and CI can run without needing
+     * production certificates. In production the env var must be set.
      */
     public function validateIncomingSignature(string $xmlContent): bool
     {
@@ -50,7 +72,22 @@ class WsSecurityService
     }
 
     /**
-     * Sign a SOAP response with WS-Security header.
+     * Sign an arbitrary SOAP envelope and return it with a wsse:Security header.
+     *
+     * Despite the name, this method works on any SOAP envelope — responses
+     * we return to the Ministry AND outbound callback requests we originate.
+     * The method computes an exc-c14n digest of the Body, builds SignedInfo,
+     * signs with SHA256/RSA using the configured client private key, and
+     * injects the full security header before the Body.
+     *
+     * If the client cert or key path is missing, the XML is returned
+     * unmodified. This enables local dev without certificates but means
+     * production MUST verify the config is present at boot.
+     *
+     * Gotcha: DOMDocument normalises default namespaces on parse. If the
+     * input uses `xmlns="..."` on the body content, the output may re-emit
+     * it with a `default:` prefix on the ancestor. Downstream consumers
+     * must use namespace-aware XPath, never string matching.
      */
     public function signResponse(string $xmlResponse): string
     {

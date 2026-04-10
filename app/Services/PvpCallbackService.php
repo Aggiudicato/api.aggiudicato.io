@@ -6,6 +6,27 @@ use App\Models\Insertion;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * Outbound callback to the Ministry confirming a listing has been published.
+ *
+ * Implements the PortaleDelleVenditeSiti.accettazioneAvvenutaPubblicazione
+ * operation per PVP_ST_Allegato_A_V1.4 §3.3. Once our site has published
+ * an auction listing received from the Ministry, we must notify them
+ * back with the published URL so they can verify the publication.
+ *
+ * Two-layer security model (both mandatory per §3.1):
+ *   - Transport (mTLS): Guzzle presents our Actalis client certificate to
+ *     the Ministry's SSL endpoint. The Ministry validates the cert chain.
+ *   - Message (WS-Security): the SOAP body is X509-signed with the same
+ *     private key so the Ministry can archive the signed message as
+ *     proof of non-repudiation.
+ *
+ * Gotcha: the SOAP operation name is `accettazioneAvvenutaPubblicazione`
+ * but the body root element is `reportPubblicazioneInserzione` in a
+ * DIFFERENT namespace (ReportPubblicazioneInserzioneXMLSchema, not
+ * PortaleDelleVenditeSiti). The SOAPAction header uses the operation name,
+ * the body uses the report schema name. Don't conflate them.
+ */
 class PvpCallbackService
 {
     private const NS_REPORT = 'http://www.giustizia.it/pvp/integration/portaleVenditaWS/siti/service/definitions/ReportPubblicazioneInserzioneXMLSchema';
@@ -15,8 +36,12 @@ class PvpCallbackService
     public function __construct(private WsSecurityService $wsSecurity) {}
 
     /**
-     * Notify the Ministry that the listing has been published.
-     * Sends a WS-Security signed SOAP request over mTLS.
+     * Build, sign and POST the callback SOAP message to the Ministry.
+     *
+     * Throws RuntimeException on missing config or HTTP error so callers
+     * (typically a queued job) can retry via Laravel's failure handling.
+     * Logs before and after to enable audit trail reconstruction from
+     * storage/logs during post-incident investigation.
      */
     public function notifyPublication(Insertion $insertion): void
     {
