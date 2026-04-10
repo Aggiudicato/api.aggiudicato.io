@@ -21,6 +21,8 @@
 /storage/*.pem
 /storage/*.crt
 /storage/*.cer
+/storage/certs/*
+!/storage/certs/.gitkeep
 /storage/pail
 /vendor
 Homestead.json

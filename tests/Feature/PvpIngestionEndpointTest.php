@@ -23,8 +23,8 @@ class PvpIngestionEndpointTest extends TestCase
         Storage::fake('local');
 
         config([
-            'pvp.client_cert_path' => storage_path('pvp-client.pem'),
-            'pvp.client_key_path'  => storage_path('pvp-client-key.pem'),
+            'pvp.client_cert_path' => storage_path('certs/pvp-client.pem'),
+            'pvp.client_key_path'  => storage_path('certs/pvp-client-key.pem'),
         ]);
 
         $this->fixtureXml = file_get_contents(

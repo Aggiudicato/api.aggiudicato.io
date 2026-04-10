@@ -14,8 +14,8 @@ class WsSecurityServiceTest extends TestCase
         parent::setUp();
 
         config([
-            'pvp.client_cert_path' => storage_path('pvp-client.pem'),
-            'pvp.client_key_path'  => storage_path('pvp-client-key.pem'),
+            'pvp.client_cert_path' => storage_path('certs/pvp-client.pem'),
+            'pvp.client_key_path'  => storage_path('certs/pvp-client-key.pem'),
         ]);
 
         $this->service = new WsSecurityService();

@@ -22,8 +22,8 @@ class PvpCallbackServiceTest extends TestCase
 
         config([
             'pvp.callback_url'     => 'https://model-office-pvp.giustizia.it/pvp/callback',
-            'pvp.client_cert_path' => storage_path('pvp-client.pem'),
-            'pvp.client_key_path'  => storage_path('pvp-client-key.pem'),
+            'pvp.client_cert_path' => storage_path('certs/pvp-client.pem'),
+            'pvp.client_key_path'  => storage_path('certs/pvp-client-key.pem'),
         ]);
 
         $this->service = new PvpCallbackService(new WsSecurityService());
@@ -148,7 +148,7 @@ class PvpCallbackServiceTest extends TestCase
             $signature = base64_decode(trim($signatureValueNodes->item(0)->textContent));
 
             $publicKey = openssl_pkey_get_public(
-                file_get_contents(storage_path('pvp-client.pem'))
+                file_get_contents(storage_path('certs/pvp-client.pem'))
             );
             $result = openssl_verify($signedInfo, $signature, $publicKey, OPENSSL_ALGO_SHA256);
 

@@ -28,8 +28,8 @@ class PvpInboundSignatureTest extends TestCase
         Storage::fake('local');
 
         config([
-            'pvp.client_cert_path' => storage_path('pvp-client.pem'),
-            'pvp.client_key_path'  => storage_path('pvp-client-key.pem'),
+            'pvp.client_cert_path' => storage_path('certs/pvp-client.pem'),
+            'pvp.client_key_path'  => storage_path('certs/pvp-client-key.pem'),
         ]);
 
         $this->unsignedFixture = file_get_contents(
@@ -39,7 +39,7 @@ class PvpInboundSignatureTest extends TestCase
 
     public function test_unsigned_request_is_rejected_when_ministry_cert_configured(): void
     {
-        config(['pvp.ministry_cert_path' => storage_path('pvp-client.pem')]);
+        config(['pvp.ministry_cert_path' => storage_path('certs/pvp-client.pem')]);
 
         $response = $this->call(
             'POST',
@@ -59,7 +59,7 @@ class PvpInboundSignatureTest extends TestCase
 
     public function test_signed_request_with_matching_cert_is_accepted(): void
     {
-        config(['pvp.ministry_cert_path' => storage_path('pvp-client.pem')]);
+        config(['pvp.ministry_cert_path' => storage_path('certs/pvp-client.pem')]);
 
         $signedRequest = (new WsSecurityService())->signEnvelope($this->unsignedFixture);
 
@@ -87,7 +87,7 @@ class PvpInboundSignatureTest extends TestCase
         // Point ministry cert to the real model-office ministry cert.
         // Our request is signed with the client cert — fingerprints will differ.
         config([
-            'pvp.ministry_cert_path' => storage_path('documenti/model-office-pvp.giustizia.it.cer'),
+            'pvp.ministry_cert_path' => storage_path('certs/model-office-pvp.giustizia.it.cer'),
         ]);
 
         $signedRequest = (new WsSecurityService())->signEnvelope($this->unsignedFixture);
