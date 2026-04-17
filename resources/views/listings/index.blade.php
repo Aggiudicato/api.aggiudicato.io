@@ -55,14 +55,14 @@
         </thead>
         <tbody>
             @forelse($insertions as $ins)
-            <tr>
+            <tr data-pvp-listing="{{ $ins->pvp_id }}">
                 <td>{{ $ins->pvp_id }}</td>
                 <td>{{ $ins->procedure->court ?? '-' }}</td>
                 <td>{{ $ins->procedure->type ?? '-' }}</td>
                 <td>{{ $ins->lot->description_it ?? '-' }}</td>
                 <td>{{ $ins->saleData->sale_datetime ?? '-' }}</td>
                 <td>{{ $ins->saleData->base_price ?? '-' }}</td>
-                <td><a href="{{ url('/listings/' . $ins->id) }}">Dettaglio</a></td>
+                <td><a href="{{ url('/listings/' . $ins->id) }}" data-pvp-listing-url="1">Dettaglio</a></td>
             </tr>
             @empty
             <tr>

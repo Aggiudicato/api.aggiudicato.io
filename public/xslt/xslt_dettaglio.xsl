@@ -1,122 +1,59 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+    XSLT_DETTAGLIO for PVP "Sito Pubblicità" accreditation.
+
+    Contract (Allegato A v1.4, Appendice A):
+    transform the detail XHTML page into the canonical inserzioneEspVendita
+    XML element in the Ministry's namespace, preserving the element order
+    received via SOAP. The Ministry then canonicalizes both its original
+    SOAP payload and this output (c14n) and compares them, byte for byte.
+
+    Element names, attribute names and hierarchy are therefore NOT our
+    choice — they are dictated by InserzioneEsperimentoVenditaXMLSchema.
+    Every piece of data on the page is tagged with:
+      - data-pvp-field="<canonicalName>" for simple values
+      - data-pvp-group="<canonicalName>" for nested / repeatable elements
+      - data-pvp-attr-<name>="..." for element attributes
+    The XSLT walks the DOM, skips decorative markup (tables, divs, headings),
+    and emits one XML node per tagged element in document order.
+
+    Tags explicitly omitted per spec: allegatiInserzione, immaginiBene,
+    dataPrevistaTermineVendita, spesaPrenotataDebito48 — never rendered by
+    the view so never emitted here.
+-->
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:xhtml="http://www.w3.org/1999/xhtml"
+    xmlns:pvp="http://www.giustizia.it/pvp/integration/sitoPubblicitaWS/service/definitions/InserzioneEsperimentoVenditaXMLSchema"
     exclude-result-prefixes="xhtml">
 
-    <xsl:output method="xml" encoding="UTF-8" indent="yes" />
-
-    <!-- XSLT Dettaglio: trasforma la pagina XHTML di dettaglio annuncio
-         in un XML conforme allo schema PVP del Ministero -->
+    <xsl:output method="xml" encoding="UTF-8" indent="no" omit-xml-declaration="no" />
+    <xsl:strip-space elements="*" />
 
     <xsl:template match="/">
-        <dettaglioAnnuncio>
-            <!-- Dati principali dall'header -->
-            <idInserzione>
-                <xsl:value-of select="//xhtml:body/xhtml:p[1]/xhtml:strong" />
-            </idInserzione>
-            <dataPubblicazione>
-                <xsl:value-of select="//xhtml:body/xhtml:p[2]/xhtml:strong" />
-            </dataPubblicazione>
-            <tipologiaInserzione>
-                <xsl:value-of select="//xhtml:body/xhtml:p[3]/xhtml:strong" />
-            </tipologiaInserzione>
-
-            <!-- Procedura -->
-            <xsl:if test="//xhtml:div[@id='procedura']">
-                <procedura>
-                    <xsl:for-each select="//xhtml:div[@id='procedura']/xhtml:table[1]/xhtml:tr">
-                        <xsl:element name="{translate(normalize-space(xhtml:th), ' ', '')}">
-                            <xsl:value-of select="xhtml:td" />
-                        </xsl:element>
-                    </xsl:for-each>
-                    <!-- Soggetti -->
-                    <xsl:if test="//xhtml:div[@id='procedura']/xhtml:table[2]">
-                        <soggetti>
-                            <xsl:for-each select="//xhtml:div[@id='procedura']/xhtml:table[2]/xhtml:tbody/xhtml:tr">
-                                <soggetto>
-                                    <tipo><xsl:value-of select="xhtml:td[1]" /></tipo>
-                                    <nominativo><xsl:value-of select="xhtml:td[2]" /></nominativo>
-                                    <codiceFiscale><xsl:value-of select="xhtml:td[3]" /></codiceFiscale>
-                                    <email><xsl:value-of select="xhtml:td[4]" /></email>
-                                    <telefono><xsl:value-of select="xhtml:td[5]" /></telefono>
-                                </soggetto>
-                            </xsl:for-each>
-                        </soggetti>
-                    </xsl:if>
-                </procedura>
-            </xsl:if>
-
-            <!-- Lotto -->
-            <xsl:if test="//xhtml:div[@id='lotto']">
-                <lotto>
-                    <xsl:for-each select="//xhtml:div[@id='lotto']/xhtml:table[1]/xhtml:tr">
-                        <xsl:element name="{translate(normalize-space(xhtml:th), ' ', '')}">
-                            <xsl:value-of select="xhtml:td" />
-                        </xsl:element>
-                    </xsl:for-each>
-                    <!-- Beni -->
-                    <xsl:for-each select="//xhtml:div[starts-with(@id, 'bene-')]">
-                        <bene>
-                            <xsl:for-each select="xhtml:table[1]/xhtml:tr">
-                                <xsl:element name="{translate(normalize-space(xhtml:th), ' ', '')}">
-                                    <xsl:value-of select="xhtml:td" />
-                                </xsl:element>
-                            </xsl:for-each>
-                            <!-- Dati Catastali -->
-                            <xsl:if test="xhtml:table[2]">
-                                <datiCatastali>
-                                    <xsl:for-each select="xhtml:table[2]/xhtml:tbody/xhtml:tr">
-                                        <catastale>
-                                            <sezione><xsl:value-of select="xhtml:td[1]" /></sezione>
-                                            <foglio><xsl:value-of select="xhtml:td[2]" /></foglio>
-                                            <particella><xsl:value-of select="xhtml:td[3]" /></particella>
-                                            <subalterno><xsl:value-of select="xhtml:td[4]" /></subalterno>
-                                        </catastale>
-                                    </xsl:for-each>
-                                </datiCatastali>
-                            </xsl:if>
-                        </bene>
-                    </xsl:for-each>
-                </lotto>
-            </xsl:if>
-
-            <!-- Dati Vendita -->
-            <xsl:if test="//xhtml:div[@id='dati-vendita']">
-                <datiVendita>
-                    <xsl:for-each select="//xhtml:div[@id='dati-vendita']/xhtml:table/xhtml:tr">
-                        <xsl:element name="{translate(normalize-space(xhtml:th), ' ', '')}">
-                            <xsl:value-of select="xhtml:td" />
-                        </xsl:element>
-                    </xsl:for-each>
-                </datiVendita>
-            </xsl:if>
-
-            <!-- Siti -->
-            <xsl:if test="//xhtml:div[@id='siti']">
-                <siti>
-                    <xsl:for-each select="//xhtml:div[@id='siti']/xhtml:table/xhtml:tbody/xhtml:tr">
-                        <sito>
-                            <tipologia><xsl:value-of select="xhtml:td[1]" /></tipologia>
-                            <nominativo><xsl:value-of select="xhtml:td[2]" /></nominativo>
-                            <url><xsl:value-of select="xhtml:td[3]/xhtml:a/@href" /></url>
-                        </sito>
-                    </xsl:for-each>
-                </siti>
-            </xsl:if>
-
-            <!-- Eventi -->
-            <xsl:if test="//xhtml:div[@id='eventi']">
-                <eventi>
-                    <xsl:for-each select="//xhtml:div[@id='eventi']/xhtml:table/xhtml:tbody/xhtml:tr">
-                        <evento>
-                            <tipologia><xsl:value-of select="xhtml:td[1]" /></tipologia>
-                            <nota><xsl:value-of select="xhtml:td[2]" /></nota>
-                            <dataPubblicazione><xsl:value-of select="xhtml:td[3]" /></dataPubblicazione>
-                        </evento>
-                    </xsl:for-each>
-                </eventi>
-            </xsl:if>
-        </dettaglioAnnuncio>
+        <xsl:apply-templates select="(//xhtml:*[@data-pvp-group='inserzioneEspVendita'])[1]" />
     </xsl:template>
+
+    <xsl:template match="xhtml:*[@data-pvp-group]">
+        <xsl:element name="{@data-pvp-group}" namespace="http://www.giustizia.it/pvp/integration/sitoPubblicitaWS/service/definitions/InserzioneEsperimentoVenditaXMLSchema">
+            <xsl:for-each select="@*[starts-with(name(), 'data-pvp-attr-')]">
+                <xsl:attribute name="{substring-after(name(), 'data-pvp-attr-')}">
+                    <xsl:value-of select="." />
+                </xsl:attribute>
+            </xsl:for-each>
+            <xsl:apply-templates />
+        </xsl:element>
+    </xsl:template>
+
+    <xsl:template match="xhtml:*[@data-pvp-field]">
+        <xsl:element name="{@data-pvp-field}" namespace="http://www.giustizia.it/pvp/integration/sitoPubblicitaWS/service/definitions/InserzioneEsperimentoVenditaXMLSchema">
+            <xsl:value-of select="normalize-space(.)" />
+        </xsl:element>
+    </xsl:template>
+
+    <xsl:template match="xhtml:*">
+        <xsl:apply-templates />
+    </xsl:template>
+
+    <xsl:template match="text()" />
 </xsl:stylesheet>
