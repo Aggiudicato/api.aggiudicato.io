@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index']);
 Route::get('/pvp/service', [ServiceController::class, 'index']);
+Route::get('/pvp/service.wsdl', [ServiceController::class, 'index']);
 Route::post('/pvp/service', [PvpController::class, 'receive'])
     ->middleware(VerifyWsSecurity::class);
 

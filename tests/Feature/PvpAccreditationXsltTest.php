@@ -60,7 +60,7 @@ class PvpAccreditationXsltTest extends TestCase
             ->assertOk()
             ->getContent();
 
-        $output = $this->applyXslt($html, public_path('xslt/xslt_ricerca.xsl'), 'text');
+        $output = $this->applyXslt($html, public_path('xslt/xslt_ricerca.xslt'), 'text');
 
         $this->assertSame(url('/listings/' . $insertion->id), trim($output));
     }
@@ -71,7 +71,7 @@ class PvpAccreditationXsltTest extends TestCase
             ->assertOk()
             ->getContent();
 
-        $output = $this->applyXslt($html, public_path('xslt/xslt_ricerca.xsl'), 'text');
+        $output = $this->applyXslt($html, public_path('xslt/xslt_ricerca.xslt'), 'text');
 
         $this->assertSame('', trim($output));
     }
@@ -85,7 +85,7 @@ class PvpAccreditationXsltTest extends TestCase
             ->assertHeader('Content-Type', 'application/xhtml+xml; charset=UTF-8')
             ->getContent();
 
-        $dom = $this->applyXslt($html, public_path('xslt/xslt_dettaglio.xsl'), 'dom');
+        $dom = $this->applyXslt($html, public_path('xslt/xslt_dettaglio.xslt'), 'dom');
 
         $root = $dom->documentElement;
 
@@ -101,7 +101,7 @@ class PvpAccreditationXsltTest extends TestCase
 
         $html = $this->get('/listings/' . $insertion->id)->getContent();
 
-        $dom = $this->applyXslt($html, public_path('xslt/xslt_dettaglio.xsl'), 'dom');
+        $dom = $this->applyXslt($html, public_path('xslt/xslt_dettaglio.xslt'), 'dom');
 
         $expectedOrder = ['tipologiaInserzione', 'datiProcedura', 'lotto', 'datiVendita'];
         $actualOrder = [];
@@ -133,7 +133,7 @@ class PvpAccreditationXsltTest extends TestCase
 
         $html = $this->get('/listings/' . $insertion->id)->getContent();
 
-        $dom = $this->applyXslt($html, public_path('xslt/xslt_dettaglio.xsl'), 'dom');
+        $dom = $this->applyXslt($html, public_path('xslt/xslt_dettaglio.xslt'), 'dom');
 
         $xpath = new \DOMXPath($dom);
         $xpath->registerNamespace('pvp', self::PVP_NS);
