@@ -31,10 +31,10 @@
             <label for="procedure_type">Tipo Procedura:</label>
             <select id="procedure_type" name="procedure_type">
                 <option value="">-- Tutti --</option>
-                <option value="ESECUZIONE_IMMOBILIARE"{{ request('procedure_type') === 'ESECUZIONE_IMMOBILIARE' ? ' selected="selected"' : '' }}>Esecuzione Immobiliare</option>
-                <option value="ESECUZIONE_MOBILIARE"{{ request('procedure_type') === 'ESECUZIONE_MOBILIARE' ? ' selected="selected"' : '' }}>Esecuzione Mobiliare</option>
-                <option value="PROCEDURA_CONCORSUALE"{{ request('procedure_type') === 'PROCEDURA_CONCORSUALE' ? ' selected="selected"' : '' }}>Procedura Concorsuale</option>
-                <option value="ALTRA_VENDITA"{{ request('procedure_type') === 'ALTRA_VENDITA' ? ' selected="selected"' : '' }}>Altra Vendita</option>
+                <option value="ESECUZIONE_IMMOBILIARE"{!! request('procedure_type') === 'ESECUZIONE_IMMOBILIARE' ? ' selected="selected"' : '' !!}>Esecuzione Immobiliare</option>
+                <option value="ESECUZIONE_MOBILIARE"{!! request('procedure_type') === 'ESECUZIONE_MOBILIARE' ? ' selected="selected"' : '' !!}>Esecuzione Mobiliare</option>
+                <option value="PROCEDURA_CONCORSUALE"{!! request('procedure_type') === 'PROCEDURA_CONCORSUALE' ? ' selected="selected"' : '' !!}>Procedura Concorsuale</option>
+                <option value="ALTRA_VENDITA"{!! request('procedure_type') === 'ALTRA_VENDITA' ? ' selected="selected"' : '' !!}>Altra Vendita</option>
             </select>
 
             <input type="submit" value="Cerca" />
