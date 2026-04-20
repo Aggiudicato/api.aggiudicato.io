@@ -264,7 +264,7 @@
 
     <wsdl:service name="SitiService">
         <wsdl:port binding="tns:SitiSoapBinding" name="SitiPort">
-            <soap:address location="https://api.aggiudicato.io/pvp/service" />
+            <soap:address location="{{ url('/pvp/service') }}" />
         </wsdl:port>
     </wsdl:service>
 </wsdl:definitions>
